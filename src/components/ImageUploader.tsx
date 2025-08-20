@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useRef } from 'react';
-import Image from 'next/image';
+import { useState, useCallback, useRef } from "react";
+import Image from "next/image";
 
 interface ImageData {
   file: File;
@@ -21,85 +21,100 @@ interface ImageUploaderProps {
 export default function ImageUploader({
   onImageUpload,
   maxSize = 5, // 5MB default
-  acceptedTypes = ['image/png'], // Only PNG files
-  className = ''
+  acceptedTypes = ["image/png"], // Only PNG files
+  className = "",
 }: ImageUploaderProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
-  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number; aspectRatio: number } | null>(null);
+  const [imageDimensions, setImageDimensions] = useState<{
+    width: number;
+    height: number;
+    aspectRatio: number;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const validateFile = useCallback((file: File): string | null => {
-    // Check if it's a PNG file specifically
-    if (file.type !== 'image/png') {
-      return 'Please upload a PNG file only';
-    }
-    
-    // Additional check for PNG file extension
-    if (!file.name.toLowerCase().endsWith('.png')) {
-      return 'Please upload a file with .png extension';
-    }
-    
-    if (file.size > maxSize * 1024 * 1024) {
-      return `File size must be less than ${maxSize}MB`;
-    }
-    
-    return null;
-  }, [maxSize]);
+  const validateFile = useCallback(
+    (file: File): string | null => {
+      // Check if it's a PNG file specifically
+      if (file.type !== "image/png") {
+        return "Please upload a PNG file only";
+      }
 
-  const getImageDimensions = useCallback((file: File): Promise<{ width: number; height: number; aspectRatio: number }> => {
-    return new Promise((resolve) => {
-      const img = new window.Image();
-      const url = URL.createObjectURL(file);
-      
-      img.onload = () => {
-        const width = img.naturalWidth;
-        const height = img.naturalHeight;
-        const aspectRatio = width / height;
-        
-        URL.revokeObjectURL(url);
-        resolve({ width, height, aspectRatio });
-      };
-      
-      img.src = url;
-    });
-  }, []);
+      // Additional check for PNG file extension
+      if (!file.name.toLowerCase().endsWith(".png")) {
+        return "Please upload a file with .png extension";
+      }
 
-  const handleFile = useCallback(async (file: File) => {
-    setError(null);
-    
-    const validationError = validateFile(file);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+      if (file.size > maxSize * 1024 * 1024) {
+        return `File size must be less than ${maxSize}MB`;
+      }
 
-    try {
-      // Get image dimensions
-      const dimensions = await getImageDimensions(file);
-      setImageDimensions(dimensions);
+      return null;
+    },
+    [maxSize]
+  );
 
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const previewUrl = e.target?.result as string;
-        setPreview(previewUrl);
-        
-        // Call parent callback with complete image data
-        onImageUpload({
-          file,
-          width: dimensions.width,
-          height: dimensions.height,
-          aspectRatio: dimensions.aspectRatio,
-          preview: previewUrl
-        });
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      setError('Failed to process image. Please try again.');
-    }
-  }, [validateFile, getImageDimensions, onImageUpload]);
+  const getImageDimensions = useCallback(
+    (
+      file: File
+    ): Promise<{ width: number; height: number; aspectRatio: number }> => {
+      return new Promise((resolve) => {
+        const img = new window.Image();
+        const url = URL.createObjectURL(file);
+
+        img.onload = () => {
+          const width = img.naturalWidth;
+          const height = img.naturalHeight;
+          const aspectRatio = width / height;
+
+          URL.revokeObjectURL(url);
+          resolve({ width, height, aspectRatio });
+        };
+
+        img.src = url;
+      });
+    },
+    []
+  );
+
+  const handleFile = useCallback(
+    async (file: File) => {
+      setError(null);
+
+      const validationError = validateFile(file);
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+
+      try {
+        // Get image dimensions
+        const dimensions = await getImageDimensions(file);
+        setImageDimensions(dimensions);
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const previewUrl = e.target?.result as string;
+          setPreview(previewUrl);
+
+          // Call parent callback with complete image data
+          onImageUpload({
+            file,
+            width: dimensions.width,
+            height: dimensions.height,
+            aspectRatio: dimensions.aspectRatio,
+            preview: previewUrl,
+          });
+        };
+        reader.readAsDataURL(file);
+      } catch {
+        setError("Failed to process image. Please try again.");
+      }
+    },
+    [validateFile, getImageDimensions, onImageUpload]
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -111,22 +126,28 @@ export default function ImageUploader({
     setIsDragOver(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      handleFile(files[0]);
-    }
-  }, [handleFile]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
 
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      handleFile(files[0]);
-    }
-  }, [handleFile]);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) {
+        handleFile(files[0]);
+      }
+    },
+    [handleFile]
+  );
+
+  const handleFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length > 0) {
+        handleFile(files[0]);
+      }
+    },
+    [handleFile]
+  );
 
   const handleClick = useCallback(() => {
     fileInputRef.current?.click();
@@ -137,7 +158,7 @@ export default function ImageUploader({
     setImageDimensions(null);
     setError(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   }, []);
 
@@ -146,11 +167,11 @@ export default function ImageUploader({
       <input
         ref={fileInputRef}
         type="file"
-        accept={acceptedTypes.join(',')}
+        accept={acceptedTypes.join(",")}
         onChange={handleFileInput}
         className="hidden"
       />
-      
+
       {!preview ? (
         <div
           onClick={handleClick}
@@ -160,9 +181,10 @@ export default function ImageUploader({
           className={`
             relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
             transition-all duration-200 ease-in-out
-            ${isDragOver 
-              ? 'border-blue-500 bg-blue-50' 
-              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+            ${
+              isDragOver
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
             }
           `}
         >
@@ -189,9 +211,9 @@ export default function ImageUploader({
               <p className="text-sm text-gray-500 mt-1">
                 Drag and drop your image here, or click to browse
               </p>
-                             <p className="text-xs text-gray-400 mt-2">
-                 Supports: PNG files only (max {maxSize}MB)
-               </p>
+              <p className="text-xs text-gray-400 mt-2">
+                Supports: PNG files only (max {maxSize}MB)
+              </p>
             </div>
           </div>
         </div>
@@ -231,21 +253,30 @@ export default function ImageUploader({
           {/* Image Info */}
           {imageDimensions && (
             <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-900 mb-2">Image Details</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-2">
+                Image Details
+              </h3>
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="text-gray-500">Dimensions:</span>
-                  <p className="font-medium">{imageDimensions.width} × {imageDimensions.height}</p>
+                  <p className="font-medium">
+                    {imageDimensions.width} × {imageDimensions.height}
+                  </p>
                 </div>
                 <div>
                   <span className="text-gray-500">Aspect Ratio:</span>
-                  <p className="font-medium">{imageDimensions.aspectRatio.toFixed(2)}:1</p>
+                  <p className="font-medium">
+                    {imageDimensions.aspectRatio.toFixed(2)}:1
+                  </p>
                 </div>
                 <div>
                   <span className="text-gray-500">Orientation:</span>
                   <p className="font-medium">
-                    {imageDimensions.aspectRatio > 1 ? 'Landscape' : 
-                     imageDimensions.aspectRatio < 1 ? 'Portrait' : 'Square'}
+                    {imageDimensions.aspectRatio > 1
+                      ? "Landscape"
+                      : imageDimensions.aspectRatio < 1
+                      ? "Portrait"
+                      : "Square"}
                   </p>
                 </div>
               </div>
@@ -255,13 +286,15 @@ export default function ImageUploader({
           {/* Canvas Preview with Matching Aspect Ratio */}
           {imageDimensions && (
             <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Editor Canvas Preview</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-3">
+                Editor Canvas Preview
+              </h3>
               <div className="flex justify-center">
-                <div 
+                <div
                   className="bg-gray-100 border-2 border-dashed border-gray-300 relative"
                   style={{
-                    width: '100%',
-                    maxWidth: '400px',
+                    width: "100%",
+                    maxWidth: "400px",
                     aspectRatio: imageDimensions.aspectRatio,
                   }}
                 >
@@ -292,7 +325,7 @@ export default function ImageUploader({
           )}
         </div>
       )}
-      
+
       {error && (
         <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
           <p className="text-sm text-red-600">{error}</p>
